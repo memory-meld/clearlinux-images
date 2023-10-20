@@ -59,10 +59,10 @@ sudo qemu-nbd --connect=/dev/nbd0 root.img
 sudo sgdisk -e /dev/nbd0
 sudo parted /dev/nbd0 resizepart 2 100%
 sudo resize2fs /dev/nbd0p2
-sudo fsck /dev/nbd0p2
+sudo fsck -p /dev/nbd0p2
 # sudo fdisk -l /dev/nbd0
 sudo qemu-nbd --disconnect /dev/nbd0
-sudo rmmod nbd
+sudo rmmod nbd || true
 
 
 echo === preparing cloudinit

@@ -18,30 +18,32 @@ jobs:
   # This workflow contains a single job called "build"
   build:
     # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+    runs-on: clear
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
 
+      - name: Download vmlinux
+        uses: blauqs/actions-download-asset@v1.2
+        with:
+          repo: vtta/clearlinux-images
+          version: 0.0.1
+          file: vmlinux
+          token: ${{ secrets.GITHUB_TOKEN }}
+
       # Runs a single command using the runners shell
       - name: Prepare dependencies
         run: |
-          # apt packages
-          sudo apt-get update
-          sudo apt-get -y install wget qemu-utils uuid-runtime curl xz-utils gdisk parted e2fsprogs util-linux fd-find ripgrep jq dosfstools mtools coreutils zstd
           # cloudhypervisor
           wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/latest/download/cloud-hypervisor
           chmod a+x cloud-hypervisor
-          # vmlinux
-          wget https://github.com/vtta/clearlinux-images/releases/download/v0.0.1/vmlinux
-          ln -sf /usr/bin/fdfind fd
-          sudo mv -f fd cloud-hypervisor /usr/bin
 
       # Runs a set of commands using the runners shell
       - name: Build and compress
         run: |
+          export PATH="$PWD:$PATH"
           bash build.sh
           zstd root.img
       - uses: actions/upload-artifact@v3
