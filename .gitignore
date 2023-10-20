@@ -1,0 +1,10 @@
+*.img
+*.img.xz
+stdout
+stderr
+content
+cloudinit
+*.bak
+meta_data.json
+user_data
+

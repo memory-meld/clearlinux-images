@@ -1,0 +1,11 @@
+# derived from the LFS gdm-password.pam in gdm
+
+auth     requisite      pam_nologin.so
+auth     required       pam_env.so
+auth     include        system-auth
+
+account  include        common-account
+password include        common-password
+
+session  required       pam_limits.so
+session  include        common-session
