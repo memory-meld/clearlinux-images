@@ -27,7 +27,7 @@ trap clean_up EXIT
 
 version=42020
 pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAuAkHko0ALq\n'
-cloud_hypervisor="cloud-hypervisor"
+cloud_hypervisor="./cloud-hypervisor"
 kernel="vmlinux"
 
 variant=cloudguest
@@ -55,6 +55,8 @@ qemu-img resize root.img 32G
 echo === fixing disk size
 sudo modprobe nbd max_part=1
 sudo qemu-nbd --connect=/dev/nbd0 root.img
+# wait for nbd to be ready
+sleep 3
 sudo fdisk -l /dev/nbd0
 sudo sgdisk -e /dev/nbd0
 sudo parted /dev/nbd0 resizepart 2 100%
@@ -87,7 +89,10 @@ userdata="$self/openstack/latest/user_data"
 cat > "$userdata" <<EOF
 #cloud-config
 package_upgrade: false
-packages: [bcc, bpftrace, gdb, llvm, man-pages, neovim, net-tools, network-basic, parallel, parted, patch, performance-tools, redis-native, rsync, storage-utils, sysadmin-basic, tmux, tree, unzip, wget, which, xz, zstd, ncdu, lsof, lz4, linux-tools]
+packages: [bcc, bpftrace, gdb, llvm, htop, man-pages, neovim, net-tools, network-basic, parallel, parted, patch, performance-tools, redis-native, rsync, storage-utils, sysadmin-basic, tmux, tree, unzip, wget, which, xz, zstd, ncdu, lsof, lz4, linux-tools]
+service:
+- start:
+  - NetworkManager
 EOF
 
 rm -f cloudinit
@@ -96,36 +101,30 @@ mcopy -o -i cloudinit -s openstack ::
 
 
 echo === booting and applying cloudinit config
-cmdline=" \
-  root=/dev/vda2 rw \
-  rootfstype=ext4,f2fs \
-  console=hvc0 \
-  module.sig_enforce=0 \
-  mitigations=off \
-  cryptomgr.notests \
-  quiet \
-  no_timer_check \
-  tsc=reliable \
-  noreplace-smp \
-  page_alloc.shuffle=0 \
-  modprobe.blacklist=virtio_balloon \
-  transparent_hugepage=never \
-  loglevel=8 ignore_loglevel \
-"
+cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
 
 "${cloud_hypervisor}" \
   --cmdline "${cmdline}" \
   --kernel "${kernel}" \
   --disk path=root.img \
-  --disk path=cloudinit \
+         path=cloudinit \
   --cpus boot=2 \
   --memory size=4G \
-  --net tap=ichb0,mac=2e:89:a8:e4:92:00 \
+  --net tap=ichb4,mac=2e:89:a8:e4:92:04 \
+  --serial tty \
+  --console off \
   1> stdout 2>stderr &
 vm_pid=$!
-sleep 10
+# wait for boot
+sleep 30
 
-until rg "clr login:" stdout &>/dev/null; do
+# until rg "clr login:" stdout &>/dev/null; do
+#   sleep 1;
+# done
+ssh-keygen -R 192.168.92.104
+
+# wait swupd to install all packages
+until [ -z "$(ssh -o StrictHostKeyChecking=no clear@192.168.92.104 pgrep swupd)" ]; do
   sleep 1;
 done
 kill $vm_pid
