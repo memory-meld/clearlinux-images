@@ -86,6 +86,7 @@ userdata="$self/openstack/latest/user_data"
 cat > "$userdata" <<EOF
 #cloud-config
 package_upgrade: false
+packages: [bcc, bpftrace, gdb, llvm, man-pages, neovim, net-tools, network-basic, parallel, parted, patch, performance-tools, redis-native, rsync, storage-utils, sysadmin-basic, tmux, tree, unzip, wget, which, xz, zstd, ncdu, lsof, lz4, linux-tools]
 EOF
 
 rm -f cloudinit
@@ -118,6 +119,7 @@ cmdline=" \
   --disk path=cloudinit \
   --cpus boot=2 \
   --memory size=4G \
+  --net tap=ichb0,mac=2e:89:a8:e4:92:00 \
   1> stdout 2>stderr &
 vm_pid=$!
 sleep 10
