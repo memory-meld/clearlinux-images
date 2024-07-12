@@ -130,8 +130,8 @@ until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
 done
 ssh sudo poweroff || true
 sleep 3
-kill $vm_pid
-wait $vm_pid
+kill $vm_pid || true
+wait $vm_pid || true
 
 
 echo === done
