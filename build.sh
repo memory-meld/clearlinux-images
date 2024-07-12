@@ -17,6 +17,7 @@ cd "$self"
 _clean_up() {
   set +e
   sudo qemu-nbd --disconnect /dev/nbd0
+  sleep 3
   sudo rmmod nbd
   # qemu-img info --backing-chain root.img
 }
@@ -37,6 +38,11 @@ image=$(basename ${image_url} .xz)
 hostname=clr
 uuid=$(uuidgen)
 
+tap=ichb4
+ip=192.168.92.104
+mac=2e:89:a8:e4:92:04
+
+ssh() { command ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 
 echo === downloading base clear image
 until curl -fsSL ${image_url}-SHA512SUMS | sha512sum -c; do
@@ -110,7 +116,7 @@ cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet
          path=cloudinit \
   --cpus boot=2 \
   --memory size=4G \
-  --net tap=ichb4,mac=2e:89:a8:e4:92:04 \
+  --net tap=$tap,mac=$mac \
   --serial tty \
   --console off \
   1> stdout 2>stderr &
@@ -118,15 +124,12 @@ vm_pid=$!
 # wait for boot
 sleep 30
 
-# until rg "clr login:" stdout &>/dev/null; do
-#   sleep 1;
-# done
-ssh-keygen -R 192.168.92.104
-
 # wait swupd to install all packages
-until [ "starting" != "$(ssh -o StrictHostKeyChecking=no clear@192.168.92.104 systemctl is-system-running)" ]; do
+until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
   sleep 1;
 done
+ssh sudo poweroff
+sleep 3
 kill $vm_pid
 wait $vm_pid
 
