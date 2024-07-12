@@ -126,7 +126,7 @@ sleep 30
 
 # wait swupd to install all packages
 until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
-  sleep 1;
+  sleep 30;
 done
 ssh sudo poweroff || true
 sleep 3
