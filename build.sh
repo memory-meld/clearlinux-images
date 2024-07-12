@@ -128,7 +128,7 @@ sleep 30
 until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
   sleep 1;
 done
-ssh sudo poweroff
+ssh sudo poweroff || true
 sleep 3
 kill $vm_pid
 wait $vm_pid
