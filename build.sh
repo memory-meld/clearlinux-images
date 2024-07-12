@@ -66,7 +66,7 @@ sleep 3
 sudo fdisk -l /dev/nbd0
 sudo sgdisk -e /dev/nbd0
 sudo parted /dev/nbd0 resizepart 2 100%
-sudo e2fsck -f /dev/nbd0p2
+sudo e2fsck -p -f /dev/nbd0p2
 sudo resize2fs /dev/nbd0p2
 sudo fsck -p /dev/nbd0p2
 sudo fdisk -l /dev/nbd0
