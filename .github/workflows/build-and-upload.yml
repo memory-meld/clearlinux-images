@@ -26,11 +26,11 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Download vmlinux
-        uses: blauqs/actions-download-asset@v1.2
+        uses: robinraju/release-downloader@v1
         with:
           repo: memory-meld/clearlinux-images
-          version: 0.0.1
-          file: vmlinux
+          tag: v0.0.1
+          fileName: vmlinux
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # Runs a single command using the runners shell
