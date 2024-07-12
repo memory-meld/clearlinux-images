@@ -25,7 +25,7 @@ clean_up() {
 }
 trap clean_up EXIT
 
-version=40130
+version=42020
 pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAuAkHko0ALq\n'
 cloud_hypervisor="cloud-hypervisor"
 kernel="vmlinux"
