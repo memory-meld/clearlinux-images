@@ -124,7 +124,7 @@ sleep 30
 ssh-keygen -R 192.168.92.104
 
 # wait swupd to install all packages
-until [ -z "$(ssh -o StrictHostKeyChecking=no clear@192.168.92.104 pgrep swupd)" ]; do
+until [ "starting" != "$(ssh -o StrictHostKeyChecking=no clear@192.168.92.104 systemctl is-system-running)" ]; do
   sleep 1;
 done
 kill $vm_pid
