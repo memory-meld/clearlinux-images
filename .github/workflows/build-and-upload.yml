@@ -46,7 +46,13 @@ jobs:
           export PATH="$PWD:$PATH"
           bash build.sh
           zstd root.img
+
       - uses: actions/upload-artifact@v3
         with:
-          name: final image
+          name: root.img.zst
           path: root.img.zst
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: journalctl.log
+          path: journalctl.log

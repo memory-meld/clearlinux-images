@@ -164,6 +164,7 @@ done
 
 
 echo "=== shutting down VM"
+ssh sudo journalctl | tee journalctl.log
 ssh sudo poweroff || true
 sleep 3
 kill $vm_pid || true
