@@ -1,5 +1,7 @@
-#!/bin/sh
+#!/bin/bash
 set -eux
+
+# required utils: ssh wget curl qemi-img fd jq xz mkdosfs mcopy uuidgen
 
 # Some assumption made:
 # - The default username of clearlinux is clear and it will be created by default and has sudo permission without password
@@ -33,6 +35,7 @@ kernel="vmlinux"
 
 variant=cloudguest
 image_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/clear-${version}-${variant}.img.xz
+config_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/config/image/${variant}.yaml
 compressed_image=$(basename ${image_url})
 image=$(basename ${image_url} .xz)
 hostname=clr
@@ -44,21 +47,25 @@ mac=2e:89:a8:e4:92:04
 
 ssh() { command ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 
-echo === downloading base clear image
+
+
+echo "=== downloading base clear image"
 until curl -fsSL ${image_url}-SHA512SUMS | sha512sum -c; do
   wget -O ${compressed_image} ${image_url}
 done
 xz -dfk ${compressed_image}
 
 
-echo === creating rootfs
+
+echo "=== creating rootfs"
 # backing is not supported, revert back to flattened image
 # qemu-img create -f qcow2 -b ${image} -F qcow2 -o compression_type=zstd root.img 32G
 qemu-img convert -O qcow2 -o compression_type=zstd ${image} root.img
 qemu-img resize root.img 32G
 
 
-echo === fixing disk size
+
+echo "=== resizing filesystem"
 sudo modprobe nbd max_part=1
 sudo qemu-nbd --connect=/dev/nbd0 root.img
 # wait for nbd to be ready
@@ -74,7 +81,8 @@ sudo qemu-nbd --disconnect /dev/nbd0
 sudo rmmod nbd || true
 
 
-echo === preparing cloudinit
+
+echo "=== generating cloudinit data"
 content="$self/content"
 pushd openstack/content
 fd --type file \
@@ -83,6 +91,7 @@ fd --type file \
   > "$content" 
 popd
 
+# https://github.com/clearlinux/micro-config-drive/blob/c4b7f9161add40efd39e70832d3cfaac6e70b78a/src/datasources/openstack.c#L108
 metadata="$self/openstack/latest/meta_data.json"
 cat "$content" | jq --slurp \
   --arg hostname "$hostname" \
@@ -91,22 +100,36 @@ cat "$content" | jq --slurp \
   '{ hostname: $hostname, uuid: $uuid, public_keys: { userkey: $pubkey }, files: . }' \
   > "$metadata"
 
+# It seems that the ucd will sequentially traverse the nodes in the yaml
+# https://github.com/clearlinux/micro-config-drive/blob/c4b7f9161add40efd39e70832d3cfaac6e70b78a/src/interpreters/cloud_config.c#L249C13-L249C33
 userdata="$self/openstack/latest/user_data"
 cat > "$userdata" <<EOF
 #cloud-config
 package_upgrade: false
-packages: [bcc, bpftrace, gdb, llvm, htop, man-pages, neovim, net-tools, network-basic, parallel, parted, patch, performance-tools, redis-native, rsync, storage-utils, sysadmin-basic, tmux, tree, unzip, wget, which, xz, zstd, ncdu, lsof, lz4, linux-tools]
-service:
-- start:
-  - NetworkManager
+packages:
+- dev-utils
+- storage-utils
+- network-basic
+- sysadmin-basic
+- performance-tools
+- python-data-science
+- neovim
+- redis-native
+- ncdu
+bootcmd:
+- pip install --upgrade --user drgn fire
 EOF
 
+
+
+echo "=== creating cloudinit image"
 rm -f cloudinit
 mkdosfs -n config-2 -C cloudinit 8192
 mcopy -o -i cloudinit -s openstack ::
 
 
-echo === booting and applying cloudinit config
+
+echo "=== booting and applying cloudinit config"
 cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
 
 "${cloud_hypervisor}" \
@@ -124,14 +147,26 @@ vm_pid=$!
 # wait for boot
 sleep 30
 
-# wait swupd to install all packages
+
+
+echo "=== waiting for swupd to install all packages"
 until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
   sleep 30;
 done
+
+
+
+# echo "=== install additional packages"
+# ssh sudo pip install --upgrade --user drgn fire
+
+
+
+echo "=== shutting down VM"
 ssh sudo poweroff || true
 sleep 3
 kill $vm_pid || true
 wait $vm_pid || true
 
 
-echo === done
+
+echo "=== done"
