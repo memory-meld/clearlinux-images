@@ -1,49 +1,38 @@
 #!/bin/bash
 set -eux
 
-# required utils: ssh wget curl qemi-img fd jq xz mkdosfs mcopy uuidgen
-
-# Some assumption made:
-# - The default username of clearlinux is clear and it will be created by default and has sudo permission without password
-# - However, default clearlinux does not provide proper pam configurations under /usr/share/pam.d/ which makes login to the VM not possible
-# - We provide these files in openstack/content and a file list will be created and the ucd will be notified through meta_data.json, which then put those files to correct location
-# - The default clearlinux qcow2 image is full.
-# - We will resize the disk image, fix the GPT table, resize the partition and grow the filesystem to 32G
-# - Cloudhypervisor still does not support qcow2 backing file, although the claim supporting code is merged since v34
-# - We will create a full sized image instead
-
-self=$(readlink -f $0)
-self=$(dirname "$self")
+self="$(dirname "$(readlink -f "$0")")"
 cd "$self"
 
 version=42030
-pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAuAkHko0ALq\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINI0chGIKX8+R4oyO44rzLlAO+WBjzN5iJcQHp5pUtk3\n'
-cloud_hypervisor="./cloud-hypervisor"
-kernel="vmlinux"
-
 variant=cloudguest
 image_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/clear-${version}-${variant}.img.xz
 config_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/config/image/${variant}.yaml
 compressed_image=$(basename ${image_url})
 image=$(basename ${image_url} .xz)
+
 hostname=clr
 uuid=$(uuidgen)
+pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAuAkHko0ALq\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINI0chGIKX8+R4oyO44rzLlAO+WBjzN5iJcQHp5pUtk3\n'
+metadata="$self/openstack/latest/meta_data.json"
+userdata="$self/openstack/latest/user_data"
 
-tap=clrimg100
+kernel="vmlinux"
+cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
+
 ip=192.168.232.200
-mac=2e:89:a8:e4:e8:64
-virbr=virbr-${tap}
 subnet=192.168.232
-chmod 600 id_ed25519
+mac=2e:89:a8:e4:e8:64
+tap=clrimg100
+virbr=virbr-${tap}
 
+chmod 600 id_ed25519
+sudo chmod a+rw /dev/kvm
 
 
 ssh() { command ssh -i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 clean_up() {
   set +e
-  sudo qemu-nbd --disconnect /dev/nbd0
-  sleep 3
-  sudo rmmod nbd
   sudo ip tuntap del $tap mode tap
   sudo virsh net-destroy $virbr
   sudo virsh net-undefine $virbr
@@ -61,54 +50,28 @@ xz -dfk ${compressed_image}
 
 
 echo "=== creating rootfs"
-# backing is not supported, revert back to flattened image
-# qemu-img create -f qcow2 -b ${image} -F qcow2 -o compression_type=zstd root.img 32G
 qemu-img convert -O qcow2 -o compression_type=zstd ${image} root.img
+# cloudinit will resize the fs on first boot
 qemu-img resize root.img 32G
 
 
 
-# echo "=== resizing filesystem"
-# sudo modprobe nbd max_part=1
-# sudo qemu-nbd --connect=/dev/nbd0 root.img
-# # wait for nbd to be ready
-# sleep 3
-# sudo fdisk -l /dev/nbd0
-# sudo sgdisk -e /dev/nbd0
-# sudo parted /dev/nbd0 resizepart 2 100%
-# sudo e2fsck -p -f /dev/nbd0p2
-# sudo resize2fs /dev/nbd0p2
-# sudo fsck -p /dev/nbd0p2
-# sudo fdisk -l /dev/nbd0
-# sudo qemu-nbd --disconnect /dev/nbd0
-# sleep 3
-# sudo rmmod nbd || true
-
-
-
 echo "=== generating cloudinit data"
-content="$self/content"
-mkdir -p openstack/content
-pushd openstack/content
-fd --type file \
-  --strip-cwd-prefix \
-  -x printf '{ "content_path": "/content/%s", "path": "/%s" }\n' {} {} \
-  > "$content" 
-popd
-
+mkdir -p openstack/{content,latest}
 # https://github.com/clearlinux/micro-config-drive/blob/c4b7f9161add40efd39e70832d3cfaac6e70b78a/src/datasources/openstack.c#L108
-metadata="$self/openstack/latest/meta_data.json"
-cat "$content" | jq --slurp \
-  --arg hostname "$hostname" \
-  --arg uuid "$uuid" \
-  --arg pubkey "$pubkey" \
-  '{ hostname: $hostname, uuid: $uuid, public_keys: { userkey: $pubkey }, files: . }' \
-  > "$metadata"
-
+fd --base-directory openstack/content \
+    --type file \
+  | jq --raw-input \
+    '{ content_path: ("/content/" + .), path: ("/" + .) }' \
+  | jq --slurp \
+    --arg hostname "$hostname" \
+    --arg uuid "$uuid" \
+    --arg pubkey "$pubkey" \
+    '{ hostname: $hostname, uuid: $uuid, public_keys: { userkey: $pubkey }, files: . }' \
+  | tee "$metadata"
 # It seems that the ucd will sequentially traverse the nodes in the yaml
 # https://github.com/clearlinux/micro-config-drive/blob/c4b7f9161add40efd39e70832d3cfaac6e70b78a/src/interpreters/cloud_config.c#L249C13-L249C33
-userdata="$self/openstack/latest/user_data"
-cat > "$userdata" <<EOF
+tee "$userdata" <<EOF
 #cloud-config
 package_upgrade: false
 packages:
@@ -137,7 +100,7 @@ mcopy -o -i cloudinit -s openstack ::
 
 
 echo "=== creating NAT netowrk and network bridge"
-cat > network.xml <<EOF
+tee network.xml <<EOF
 <network>
   <name>${virbr}</name>
   <bridge name='${virbr}'/>
@@ -160,9 +123,7 @@ sudo ip link set dev $tap up
 
 
 echo "=== booting and applying cloudinit config"
-cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
-
-"${cloud_hypervisor}" \
+cloud-hypervisor \
   --cmdline "${cmdline}" \
   --kernel "${kernel}" \
   --disk path=root.img \
@@ -180,19 +141,17 @@ sleep 30
 
 
 echo "=== waiting for swupd to install all packages"
-ssh systemctl is-system-running --wait || true
-
-
-
-# echo "=== install additional packages"
-# ssh sudo pip install --upgrade --user drgn fire
+status=$(ssh systemctl is-system-running --wait)
+if [ "$status" != "running" ] && [ "$status" != "degraded" ]; then
+  echo "=== failed: guest systemctl status: $status"
+  exit 1
+fi
 
 
 
 echo "=== shutting down VM"
 ssh sudo journalctl | tee journalctl.log
 ssh sudo poweroff || true
-sleep 3
 kill $vm_pid || true
 wait $vm_pid || true
 
