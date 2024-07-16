@@ -43,6 +43,8 @@ jobs:
           sudo apt update
           sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget fd-find jq xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils
           sudo systemctl --no-pager --full start libvirtd
+          sudo adduser $USER libvirt
+          sudo chmod a+rw /dev/kvm
 
       # Runs a set of commands using the runners shell
       - name: Build and compress
