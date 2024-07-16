@@ -31,7 +31,7 @@ uuid=$(uuidgen)
 
 tap=clrimg100
 ip=192.168.232.200
-mac=2e:89:a8:e4:232:64
+mac=2e:89:a8:e4:e8:64
 virbr=virbr-${tap}
 subnet=192.168.232
 chmod 600 id_ed25519
