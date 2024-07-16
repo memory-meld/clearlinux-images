@@ -2,11 +2,7 @@
 *.img.xz
 stdout
 stderr
-content
-!openstack/content
+openstack/latest
 cloudinit
 *.bak
-meta_data.json
-user_data
-*.log
-vmlinux
+vmlinux*

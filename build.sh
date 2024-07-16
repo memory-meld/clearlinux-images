@@ -17,7 +17,7 @@ pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAu
 metadata="$self/openstack/latest/meta_data.json"
 userdata="$self/openstack/latest/user_data"
 
-kernel="vmlinux"
+kernel="vmlinux.bin"
 cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
 
 ip=192.168.232.200
@@ -136,7 +136,7 @@ cloud-hypervisor \
   1> stdout 2>stderr &
 vm_pid=$!
 # wait for boot
-sleep 30
+sleep 60
 
 
 
