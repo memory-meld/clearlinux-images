@@ -1,8 +1,0 @@
-session optional pam_motd.so motd=/run/motd
-
-auth       required     pam_securetty.so
-auth       requisite    pam_nologin.so
-auth       include      common-auth
-account    include      common-account
-password   include      common-password
-session    include      common-session
