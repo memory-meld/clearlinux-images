@@ -16,18 +16,6 @@ self=$(readlink -f $0)
 self=$(dirname "$self")
 cd "$self"
 
-_clean_up() {
-  set +e
-  sudo qemu-nbd --disconnect /dev/nbd0
-  sleep 3
-  sudo rmmod nbd
-  # qemu-img info --backing-chain root.img
-}
-clean_up() {
-  _clean_up &> /dev/null
-}
-trap clean_up EXIT
-
 version=42030
 pubkey=$'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIP8lyVDmMwXauShyBZXBH5gXY6FpG2+UsAuAkHko0ALq\nssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAINI0chGIKX8+R4oyO44rzLlAO+WBjzN5iJcQHp5pUtk3\n'
 cloud_hypervisor="./cloud-hypervisor"
@@ -41,9 +29,22 @@ image=$(basename ${image_url} .xz)
 hostname=clr
 uuid=$(uuidgen)
 
-tap=ichb100
-ip=192.168.92.200
-mac=2e:89:a8:e4:92:64
+tap=clrimg100
+ip=192.168.232.200
+mac=2e:89:a8:e4:232:64
+virbr=virbr-${tap}
+subnet=192.168.232
+
+clean_up() {
+  set +e
+  sudo qemu-nbd --disconnect /dev/nbd0
+  sleep 3
+  sudo rmmod nbd
+  sudo ip tuntap del $tap mode tap
+  sudo virsh net-destroy $virbr
+  sudo virsh net-undefine $virbr
+}
+trap "trap - SIGTERM; clean_up" SIGINT SIGTERM EXIT
 
 chmod 600 id_ed25519
 ssh() { command ssh -i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
@@ -132,6 +133,30 @@ mcopy -o -i cloudinit -s openstack ::
 
 
 
+echo "=== creating NAT netowrk and network bridge"
+sudo systemctl --no-pager --full start libvirtd
+cat > network.xml <<EOF
+<network>
+  <name>${virbr}</name>
+  <bridge name='${virbr}'/>
+  <forward/>
+  <ip address='${subnet}.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='${subnet}.2' end='${subnet}.254'/>
+      <host mac='${mac}' ip='${ip}'/>
+    </dhcp>
+  </ip>
+</network>
+EOF
+sudo virsh net-define network.xml
+sudo virsh net-start network.xml
+sudo ip tuntap del $tap mode tap
+sudo ip tuntap add $tap mode tap
+sudo brctl addif $virbr $tap
+sudo ip link set dev $tap up
+
+
+
 echo "=== booting and applying cloudinit config"
 cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet loglevel=8 ignore_loglevel"
 
@@ -140,8 +165,8 @@ cmdline="console=ttyS0 console=hvc0 root=/dev/vda2 rw rootfstype=ext4,f2fs quiet
   --kernel "${kernel}" \
   --disk path=root.img \
          path=cloudinit \
-  --cpus boot=2 \
-  --memory size=4G \
+  --cpus boot=4 \
+  --memory size=12G \
   --net tap=$tap,mac=$mac \
   --serial tty \
   --console off \
