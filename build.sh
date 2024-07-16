@@ -68,21 +68,21 @@ qemu-img resize root.img 32G
 
 
 
-echo "=== resizing filesystem"
-sudo modprobe nbd max_part=1
-sudo qemu-nbd --connect=/dev/nbd0 root.img
-# wait for nbd to be ready
-sleep 3
-sudo fdisk -l /dev/nbd0
-sudo sgdisk -e /dev/nbd0
-sudo parted /dev/nbd0 resizepart 2 100%
-sudo e2fsck -p -f /dev/nbd0p2
-sudo resize2fs /dev/nbd0p2
-sudo fsck -p /dev/nbd0p2
-sudo fdisk -l /dev/nbd0
-sudo qemu-nbd --disconnect /dev/nbd0
-sleep 3
-sudo rmmod nbd || true
+# echo "=== resizing filesystem"
+# sudo modprobe nbd max_part=1
+# sudo qemu-nbd --connect=/dev/nbd0 root.img
+# # wait for nbd to be ready
+# sleep 3
+# sudo fdisk -l /dev/nbd0
+# sudo sgdisk -e /dev/nbd0
+# sudo parted /dev/nbd0 resizepart 2 100%
+# sudo e2fsck -p -f /dev/nbd0p2
+# sudo resize2fs /dev/nbd0p2
+# sudo fsck -p /dev/nbd0p2
+# sudo fdisk -l /dev/nbd0
+# sudo qemu-nbd --disconnect /dev/nbd0
+# sleep 3
+# sudo rmmod nbd || true
 
 
 
