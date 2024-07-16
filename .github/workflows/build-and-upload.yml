@@ -1,0 +1,65 @@
+name: Build and upload rootfs image
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - build: linux
+          os: ubuntu-24.04
+
+    steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 512
+          swap-size-mb: 1024
+          remove-dotnet: 'true'
+
+      - uses: actions/checkout@v4
+
+      - name: Download vmlinux.bin
+        uses: robinraju/release-downloader@v1
+        with:
+          # repository: memory-meld/clearlinux-images
+          tag: v0.0.1
+          fileName: vmlinux.bin
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Prepare dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils jq
+          sudo systemctl --no-pager --full start libvirtd
+          sudo adduser $USER libvirt
+          sudo chmod a+rw /dev/kvm
+
+      - name: Build and compress
+        run: |
+          export PATH="$PWD/bin:$PATH"
+          bash build.sh
+          zstd -T0 root.img
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: log
+          path: |
+            stdout
+            stderr
+            journalctl.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: root.img.zst
+          path: root.img.zst
