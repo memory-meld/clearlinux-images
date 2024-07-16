@@ -34,7 +34,14 @@ ip=192.168.232.200
 mac=2e:89:a8:e4:232:64
 virbr=virbr-${tap}
 subnet=192.168.232
+if ! which fd &>/dev/null ; then
+  alias fd=fdfind
+fi
+chmod 600 id_ed25519
 
+
+
+ssh() { command ssh -i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 clean_up() {
   set +e
   sudo qemu-nbd --disconnect /dev/nbd0
@@ -45,9 +52,6 @@ clean_up() {
   sudo virsh net-undefine $virbr
 }
 trap "trap - SIGTERM; clean_up" SIGINT SIGTERM EXIT
-
-chmod 600 id_ed25519
-ssh() { command ssh -i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 
 
 
@@ -134,7 +138,6 @@ mcopy -o -i cloudinit -s openstack ::
 
 
 echo "=== creating NAT netowrk and network bridge"
-sudo systemctl --no-pager --full start libvirtd
 cat > network.xml <<EOF
 <network>
   <name>${virbr}</name>
