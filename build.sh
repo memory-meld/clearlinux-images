@@ -106,9 +106,6 @@ cat "$content" | jq --slurp \
 userdata="$self/openstack/latest/user_data"
 cat > "$userdata" <<EOF
 #cloud-config
-bootcmd:
-- pip install --upgrade --user drgn fire
-- usermod -s /usr/bin/fish clear
 package_upgrade: false
 packages:
 - shells
@@ -121,6 +118,9 @@ packages:
 - neovim
 - redis-native
 - ncdu
+fbootcmd:
+- pip install --upgrade --user drgn fire
+- usermod -s /usr/bin/fish clear
 EOF
 
 
