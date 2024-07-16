@@ -90,6 +90,7 @@ sudo rmmod nbd || true
 
 echo "=== generating cloudinit data"
 content="$self/content"
+mkdir -p openstack/content
 pushd openstack/content
 fd --type file \
   --strip-cwd-prefix \
