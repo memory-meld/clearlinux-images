@@ -45,7 +45,8 @@ tap=ichb4
 ip=192.168.92.104
 mac=2e:89:a8:e4:92:04
 
-ssh() { command ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
+chmod 600 id_ed25519
+ssh() { command ssh -i id_ed25519 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null clear@$ip "$@"; }
 
 
 
