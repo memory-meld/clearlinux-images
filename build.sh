@@ -151,7 +151,7 @@ cat > network.xml <<EOF
 </network>
 EOF
 sudo virsh net-define network.xml
-sudo virsh net-start network.xml
+sudo virsh net-start $virbr
 sudo ip tuntap del $tap mode tap
 sudo ip tuntap add $tap mode tap
 sudo brctl addif $virbr $tap
