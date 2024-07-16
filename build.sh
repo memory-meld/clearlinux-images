@@ -123,8 +123,8 @@ packages:
 - redis-native
 - ncdu
 fbootcmd:
-- pip install --upgrade --user drgn fire
-- usermod -s /usr/bin/fish clear
+- pip install --upgrade --user drgn fire;
+- usermod -s /usr/bin/fish clear;
 EOF
 
 
