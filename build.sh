@@ -34,9 +34,6 @@ ip=192.168.232.200
 mac=2e:89:a8:e4:232:64
 virbr=virbr-${tap}
 subnet=192.168.232
-if ! which fd &>/dev/null ; then
-  alias fd=fdfind
-fi
 chmod 600 id_ed25519
 
 
@@ -84,6 +81,7 @@ sudo resize2fs /dev/nbd0p2
 sudo fsck -p /dev/nbd0p2
 sudo fdisk -l /dev/nbd0
 sudo qemu-nbd --disconnect /dev/nbd0
+sleep 3
 sudo rmmod nbd || true
 
 

@@ -38,6 +38,8 @@ jobs:
           # cloudhypervisor
           wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/latest/download/cloud-hypervisor
           chmod a+x cloud-hypervisor
+          wget https://github.com/sharkdp/fd/releases/download/v10.1.0/fd-v10.1.0-x86_64-unknown-linux-musl.tar.gz
+          tar --strip-components=1 -axvf fd-v10.1.0-x86_64-unknown-linux-musl.tar.gz fd-v10.1.0-x86_64-unknown-linux-musl/fd
           sudo apt update
           sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget fd-find jq xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux
           sudo systemctl --no-pager --full start libvirtd
