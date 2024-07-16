@@ -35,13 +35,8 @@ jobs:
       # Runs a single command using the runners shell
       - name: Prepare dependencies
         run: |
-          # cloudhypervisor
-          wget --quiet https://github.com/cloud-hypervisor/cloud-hypervisor/releases/latest/download/cloud-hypervisor
-          chmod a+x cloud-hypervisor
-          wget --quiet https://github.com/sharkdp/fd/releases/download/v10.1.0/fd-v10.1.0-x86_64-unknown-linux-musl.tar.gz
-          tar --strip-components=1 -axvf fd-v10.1.0-x86_64-unknown-linux-musl.tar.gz fd-v10.1.0-x86_64-unknown-linux-musl/fd
           sudo apt update
-          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget fd-find jq xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils
+          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils
           sudo systemctl --no-pager --full start libvirtd
           sudo adduser $USER libvirt
           sudo chmod a+rw /dev/kvm
@@ -49,7 +44,7 @@ jobs:
       # Runs a set of commands using the runners shell
       - name: Build and compress
         run: |
-          export PATH="$PWD:$PATH"
+          export PATH="$PWD/bin:$PATH"
           bash build.sh
           zstd -T0 root.img
 
