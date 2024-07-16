@@ -12,13 +12,12 @@ on:
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    env:
     strategy:
       fail-fast: false
       matrix:
         include:
         - build: linux
-          os: ubuntu-latest
+          os: ubuntu-24.04
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -39,7 +38,8 @@ jobs:
           # cloudhypervisor
           wget https://github.com/cloud-hypervisor/cloud-hypervisor/releases/latest/download/cloud-hypervisor
           chmod a+x cloud-hypervisor
-          sudo apt install -y libvirt-daemon-system libvirt-bin qemu-utils coreutils iproute2 curl wget fd-find jq xz-utils dosfstools mtools uuid-runtime
+          sudo apt update
+          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget fd-find jq xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux
           sudo systemctl --no-pager --full start libvirtd
 
       # Runs a set of commands using the runners shell
