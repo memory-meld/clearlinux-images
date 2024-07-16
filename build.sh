@@ -54,7 +54,7 @@ trap "trap - SIGTERM; clean_up" SIGINT SIGTERM EXIT
 
 echo "=== downloading base clear image"
 until curl -fsSL ${image_url}-SHA512SUMS | sha512sum -c; do
-  wget -O ${compressed_image} ${image_url}
+  wget --progress=dot:giga -O ${compressed_image} ${image_url}
 done
 xz -dfk ${compressed_image}
 
