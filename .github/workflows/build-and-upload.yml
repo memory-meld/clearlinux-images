@@ -45,7 +45,7 @@ jobs:
         run: |
           export PATH="$PWD:$PATH"
           bash build.sh
-          zstd root.img
+          zstd -T0 root.img
 
       - uses: actions/upload-artifact@v3
         with:
