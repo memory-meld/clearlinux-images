@@ -28,7 +28,7 @@ jobs:
       - name: Download vmlinux
         uses: robinraju/release-downloader@v1
         with:
-          repo: memory-meld/clearlinux-images
+          # repository: memory-meld/clearlinux-images
           tag: v0.0.1
           fileName: vmlinux
           token: ${{ secrets.GITHUB_TOKEN }}
