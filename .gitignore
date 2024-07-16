@@ -3,6 +3,7 @@
 stdout
 stderr
 content
+!openstack/content
 cloudinit
 *.bak
 meta_data.json
