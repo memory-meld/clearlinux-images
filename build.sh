@@ -153,9 +153,7 @@ sleep 30
 
 
 echo "=== waiting for swupd to install all packages"
-until [ "starting" != "$(ssh systemctl is-system-running)" ]; do
-  sleep 30;
-done
+ssh systemctl is-system-running --wait || true
 
 
 
