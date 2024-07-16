@@ -61,9 +61,9 @@ mkdir -p openstack/{content,latest}
 # https://github.com/clearlinux/micro-config-drive/blob/c4b7f9161add40efd39e70832d3cfaac6e70b78a/src/datasources/openstack.c#L108
 fd --base-directory openstack/content \
     --type file \
-  | xq --raw-input \
+  | jq --raw-input \
     '{ content_path: ("/content/" + .), path: ("/" + .) }' \
-  | xq --slurp \
+  | jq --slurp \
     --arg hostname "$hostname" \
     --arg uuid "$uuid" \
     --arg pubkey "$pubkey" \

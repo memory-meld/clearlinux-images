@@ -33,7 +33,7 @@ jobs:
       - name: Prepare dependencies
         run: |
           sudo apt update
-          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils
+          sudo apt install -y libvirt-daemon-system libvirt-clients qemu-utils coreutils iproute2 curl wget xz-utils dosfstools mtools uuid-runtime fdisk gdisk parted e2fsprogs util-linux bridge-utils jq
           sudo systemctl --no-pager --full start libvirtd
           sudo adduser $USER libvirt
           sudo chmod a+rw /dev/kvm
