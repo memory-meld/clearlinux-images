@@ -1,0 +1,2 @@
+[console_scripts]
+drgn = drgn.cli:_main
