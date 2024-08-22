@@ -4,7 +4,7 @@ set -eux
 self="$(dirname "$(readlink -f "$0")")"
 cd "$self"
 
-version=42160
+version="$(curl -fsSL https://cdn-alt.download.clearlinux.org/update/version/latest_version)"
 variant=cloudguest
 image_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/clear-${version}-${variant}.img.xz
 config_url=https://cdn-alt.download.clearlinux.org/releases/${version}/clear/config/image/${variant}.yaml
