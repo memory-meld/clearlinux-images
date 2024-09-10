@@ -92,6 +92,9 @@ fbootcmd:
 - lsblk -f;
 - swupd clean;
 - lsblk -f;
+- systemctl mask man-db.service;
+- systemctl mask man-db.timer;
+- systemctl mask man-db.trigger;
 EOF
 
 
