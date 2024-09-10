@@ -95,6 +95,8 @@ fbootcmd:
 - systemctl mask man-db.service;
 - systemctl mask man-db.timer;
 - systemctl mask man-db.trigger;
+- systemctl mask swupd-update.service;
+- systemctl mask swupd-update.timer;
 EOF
 
 
